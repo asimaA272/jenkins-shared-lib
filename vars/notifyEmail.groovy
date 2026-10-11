@@ -1,15 +1,20 @@
-def call() {
-    emailext (
-        subject: "✨ Project ${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}! Task Completed",
-        body: """
-            <p><b>Hey Sir,</b></p>
-            <p>Sir, Asim baat kar raha hoon. The MLOps pipeline automation project has been completely done and successfully completed for this stage.</p>
-            <p>All green execution tracks (Dev, Pre-prod, and Production loops) are completely verified.</p>
-            <p>You can check the direct console pipeline layouts and live visual tracking logs on the Jenkins dashboard server link here: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
-            <br>
-            <p>Best regards,</p>
-            <p><b>Asim</b></p>
-        """,
-        to: "${env.EMAIL_TO}"
-    )
+def call(String status = null) {
+    def result = status ?: (currentBuild.currentResult ?: 'SUCCESS')
+    def target = env.TAG_NAME ? 'PROD' : (env.BRANCH_NAME == 'main' ? 'PRE-PROD' : 'DEV')
+    try {
+        emailext(
+            to: env.EMAIL_TO,
+            subject: "[${target}] ${env.JOB_NAME} #${env.BUILD_NUMBER} - ${result}",
+            body: """Pipeline : ${target}
+Status   : ${result}
+Branch/Tag: ${env.TAG_NAME ?: env.BRANCH_NAME}
+Build    : ${env.BUILD_URL}
+Console  : ${env.BUILD_URL}console
+""",
+            attachLog: result != 'SUCCESS'
+        )
+        echo "Email bhej di gayi: ${env.EMAIL_TO}"
+    } catch (err) {
+        echo "WARNING: email nahi ja saki: ${err}"
+    }
 }
